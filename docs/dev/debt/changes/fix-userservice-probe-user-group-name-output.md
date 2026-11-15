@@ -1,0 +1,5 @@
+# libSceUserService
+
+## change [sceUserServiceGetUserGroupName]
+
+- [sceUserServiceGetUserGroupName](../../../core/libs/prx/libSceUserService/Export.cpp) (libSceUserService) - 13.60 ABI is `(int groupIndex, char* name, size_t size)` and dispatches query `0x3001b`; AnyPS5 reads up to 128 bytes from `/system_data/priv/home/user_group_name.dat.<groupIndex>`, using `User Group <groupIndex + 1>` after any name-file open error or nonpositive read. In SceShellCore 13.60, `0x9f5410` requires a 129-byte buffer and calls the slot validator before path formatting. Validator `0x9f45e0` rejects values outside unsigned 0..128 and checks the group file. The fallback at `0x9f55a1` handles open errors and nonpositive reads, including genuine I/O errors; these are observed native semantics, not just absent-file handling. A valid group slot must exist even when its name file is missing. Returning `USER_SERVICE_ERROR_INVALID_ARGUMENT` with caller errno preserved on an unwritable `name` via `GuestCopyOut_nid_no_patch` is a host-safety fallback; native error behavior for an unmapped pointer is unmeasured.

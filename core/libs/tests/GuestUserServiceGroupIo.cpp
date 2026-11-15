@@ -22,13 +22,20 @@ void Require(bool value) { if (!value) std::abort(); }
 extern "C" {
 int APS5_VABI sceKernelOpen(const char*, int, std::uint16_t) { ++opens; return openResult; }
 int APS5_VABI sceKernelClose(int) { ++closes; return 0; }
-int APS5_VABI sceKernelStat(const char*, FileStat*) { return 0; }
+int APS5_VABI sceKernelStat(const char*, FileStat* sb) {
+    if (sb != nullptr) std::memset(sb, 0, sizeof(*sb));
+    return 0;
+}
 std::int64_t APS5_VABI sceKernelRead(int, void* buffer, std::size_t size) {
-    if (readResult > 0) std::memcpy(buffer, "Team", std::min(size, static_cast<std::size_t>(readResult)));
+    if (buffer != nullptr && readResult > 0) std::memcpy(buffer, "Team", std::min(size, static_cast<std::size_t>(readResult)));
     return readResult;
 }
 std::int64_t APS5_VABI sceKernelWrite(int, const void* buffer, std::size_t size) {
-    written.assign(static_cast<const char*>(buffer), size);
+    if (buffer != nullptr && size > 0) {
+        written.assign(static_cast<const char*>(buffer), size);
+    } else if (size == 0) {
+        written.clear();
+    }
     return writeResult;
 }
 }
@@ -43,6 +50,9 @@ int main() {
     Require(sceUserServiceGetUserGroupName(INT_MAX, name, sizeof(name)) == USER_SERVICE_ERROR_INVALID_ARGUMENT);
     Require(sceUserServiceGetUserGroupName(INT_MIN, name, sizeof(name)) == USER_SERVICE_ERROR_INVALID_ARGUMENT);
     Require(opens == 0);
+    errno = 73;
+    Require(sceUserServiceGetUserGroupName(0, reinterpret_cast<char*>(0x10), sizeof(name)) == USER_SERVICE_ERROR_INVALID_ARGUMENT);
+    Require(errno == 73);
     Require(sceUserServiceGetUserGroupName(0, name, sizeof(name)) == USER_SERVICE_OK);
     Require(std::strcmp(name, "Team") == 0 && closes == 1);
     readResult = 0;

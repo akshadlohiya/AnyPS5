@@ -271,6 +271,9 @@ int main() {
     Require(sceUserServiceSetUserGroupIndex(-2) == USER_SERVICE_ERROR_INVALID_ARGUMENT);
     Require(sceUserServiceSetUserGroupIndex(129) == USER_SERVICE_ERROR_INVALID_ARGUMENT);
     Require(sceUserServiceGetUserGroupName(0, nullptr, 129) == USER_SERVICE_ERROR_INVALID_ARGUMENT);
+    errno = 71;
+    Require(sceUserServiceGetUserGroupName(0, reinterpret_cast<char*>(0x10), 129) == USER_SERVICE_ERROR_INVALID_ARGUMENT);
+    Require(errno == 71);
     Require(sceUserServiceGetUserGroupName(0, homePath, 128) == USER_SERVICE_ERROR_BUFFER_TOO_SHORT);
     char oversizedGroupName[256]{};
     Require(sceUserServiceGetUserGroupName(0, oversizedGroupName, sizeof(oversizedGroupName)) == USER_SERVICE_ERROR_INVALID_ARGUMENT);
